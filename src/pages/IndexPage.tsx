@@ -1,35 +1,42 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { LoadingSkeleton } from "../components/LoadingSkeleton/LoadingSkeleton";
+import { NewsList } from "../components/NewsList/NewsList";
+import { getNews } from "../lib/news.api";
+import type { NewsState, NewsItem, NewsItemResult } from "../types";
+import { NewsForm } from "../components/NewsForm/NewsForm";
 
 export function IndexPage() {
-  const [news, setNews] = useState(null);
+  const [newsState, setNewsState] = useState<NewsState>("initial");
+  const [news, setNews] = useState<NewsItemResult | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://localhost:4000/news");
+      setNewsState("loading");
+      const newsResponse = await getNews();
+      console.log(newsResponse)
 
-      console.log(response.status, response.statusText);
-
-      const json = await response.json();
-
-      console.log(json);
-
-      setNews(json.data);
+      if (newsResponse.ok) {
+        setNews(newsResponse.data);
+        setNewsState("data");
+      } else {
+        setNewsState("error");
+        console.error("error fetching news", newsResponse.error);
+      }
     };
 
     fetchData();
   }, []);
 
-  console.log(news);
 
   return (
-    <p>
-      {news && (
-        <ul>
-            { news.map(i => (
-                <li>{i.title}</li>
-            ))}
-        </ul>
-      )}
+    <section>
+      <h1>Fréttir!</h1>
+      <p>state: {newsState}</p>
+      <NewsForm />
+      {newsState === "loading" && <LoadingSkeleton />}
+      {newsState === "data" && news && <NewsList news={news.data} />}
+      {newsState === "error" && <p>Villa kom upp</p>}
       <ul>
         <li>
           <Link to="/frettir/foo">Foo fréttin</Link>
@@ -38,6 +45,6 @@ export function IndexPage() {
           <Link to="/ny-frett">Ný frétt</Link>
         </li>
       </ul>
-    </p>
+    </section>
   );
 }
